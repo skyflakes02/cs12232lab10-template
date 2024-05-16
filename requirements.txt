@@ -1,0 +1,3 @@
+pyxel
+git+https://github.com/UPD-CS12-232/pyxelgrid
+git+https://github.com/UPD-CS12-232/pipelib
