@@ -1,0 +1,95 @@
+from argparse import ArgumentParser
+from dataclasses import dataclass, field
+from random import Random, getrandbits
+from typing import Final, Optional
+
+import pyxel
+
+import pyxelgrid as pg
+import pipelib as pl
+
+
+TITLE: Final[str] = "Pipe Dream"
+FPS: Final[int] = 25
+
+
+@dataclass
+class CellState:
+    has_pipe: bool = False
+    pipe_type: Optional[str] = None
+    connections: Optional[list[bool]] = field(default_factory=lambda: [False, False, False, False])
+
+
+class PipeGame(pg.PyxelGrid[CellState]):
+    def __init__(self, settings: pl.DifficultySettings, seed: int) -> None:
+        self.settings = settings
+        self.seed = seed
+        self.rand = Random(seed)
+
+        # Initialize grid with default CellState
+        initial_grid = [[CellState() for _ in range(settings.c)] for _ in range(settings.r)]
+        super().__init__(settings.r, settings.c, dim=pl.DIM, initial_grid=initial_grid)
+
+    def init(self) -> None:
+        pyxel.mouse(True)
+        pyxel.load(pl.PIPE_RESOURCE_PATH)
+        pyxel.rseed(self.seed)
+
+        # Initialize game state, such as placing initial pipes if needed
+        self.place_initial_pipes()
+
+    def place_initial_pipes(self) -> None:
+        for i in range(self.rows):
+            for j in range(self.cols):
+                if self.rand.random() < self.settings.initial_pipe_prob:
+                    self.grid[i][j] = CellState(has_pipe=True, pipe_type="straight", connections=[True, True, False, False])
+
+    def update(self) -> None:
+        # Handle mouse interactions
+        if pyxel.btnp(pyxel.MOUSE_LEFT_BUTTON):
+            cell = self.mouse_cell()
+            if cell:
+                i, j = cell
+                self.handle_click(i, j)
+
+        # TODO remove this debugging message
+        print("The mouse is at cell", self.mouse_cell())
+
+    def handle_click(self, i: int, j: int) -> None:
+        if not self.grid[i][j].has_pipe:
+            self.grid[i][j] = CellState(has_pipe=True, pipe_type="straight", connections=[True, True, False, False])
+
+    def draw_cell(self, i: int, j: int, x: int, y: int) -> None:
+        cell = self.grid[i][j]
+        if cell.has_pipe:
+            pyxel.blt(x, y, 0, 0, 0, pl.DIM, pl.DIM)  # Example blit call for a pipe image
+
+    def pre_draw_grid(self) -> None:
+        pyxel.cls(0)
+
+    def post_draw_grid(self) -> None:
+        pass
+
+
+def main():
+    # No need to change the code in `main`
+    parser = ArgumentParser(description=f"Run the '{TITLE}' game.")
+
+    parser.add_argument('-d', '--difficulty', default='easy',
+                        help=f"the game difficulty. must be one of: {', '.join(pl.DIFFICULTY_SETTINGS.keys())} (default: %(default)s)")
+    parser.add_argument('-s', '--seed', type=int, default=None,
+                        help="the seed for the random number generator. (default: based on system time)")
+
+    args = parser.parse_args()
+
+    if (seed := args.seed) is None:
+        seed = getrandbits(31)
+
+    if args.difficulty not in pl.DIFFICULTY_SETTINGS:
+        raise ValueError(f"Unknown difficulty: {args.difficulty}")
+
+    PipeGame(settings=pl.DIFFICULTY_SETTINGS[args.difficulty], seed=seed).run(title=TITLE, fps=FPS)
+
+
+if __name__ == '__main__':
+    main()
