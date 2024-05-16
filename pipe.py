@@ -14,11 +14,11 @@ FPS: Final[int] = 25
 
 
 @dataclass
-class State:
+class CellState:
     ... # TODO
 
 
-class PipeGame(pg.PyxelGrid[State]):
+class PipeGame(pg.PyxelGrid[CellState]):
     def __init__(self, settings: pl.DifficultySettings, seed: int) -> None:
         self.settings = settings
         self.seed = seed
@@ -56,6 +56,7 @@ class PipeGame(pg.PyxelGrid[State]):
 
 
 def main():
+    # No need to change the code in `main`
     parser = ArgumentParser(description=f"Run the '{TITLE}' game.")
 
     parser.add_argument('-d', '--difficulty', default='easy',
